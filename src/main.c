@@ -14,7 +14,7 @@ int main (void){
     InitAudioDevice();
 
     Music soundTrack = LoadMusicStream("./resources/soundtrack.mp3");
-    SetMusicVolume(soundTrack, 0);
+    SetMusicVolume(soundTrack, 0.5f);
     PlayMusicStream(soundTrack);
 
     Sound death_exp = LoadSound("./resources/death_sound.mp3");
@@ -40,10 +40,20 @@ int main (void){
     Texture2D tilemap = LoadTexture("./resources/monochrome_tilemap_transparent.png");
     // Texture2D game_bg = LoadTexture("./resources/tilemap-backgrounds.png");
 
-    Font logo = LoadFont("./resources/OXYGENE1.TTF");
+    Font logo = LoadFont("./resources/karma_future.TTF");
 
-    RenderTexture2D mapTexture = generateMapTexture(map, &tilemap, blocks, &blockCount, jumpers, &jmpCount, &Spawnpoint, &level);
+    // RenderTexture2D mapTexture = generateMapTexture(map, &tilemap, blocks, &blockCount, jumpers, &jmpCount, &Spawnpoint, &level);
     
+    int numBlocks = MAP_COLUMNS / BLOCK_COLUMNS;
+
+    RenderTexture2D targets[numBlocks];
+    for (int i = 0; i < numBlocks; i++){
+        targets[i] = LoadRenderTexture(BLOCK_COLUMNS * DISPLAYED_SIZE, MAP_ROWS * DISPLAYED_SIZE);
+    }
+
+    processMap(map, blocks, &blockCount, jumpers, &jmpCount, &Spawnpoint, &level);
+    renderMapInColumns(map, &tilemap, targets, numBlocks);
+
     Player player = {
         .position = Spawnpoint,
         .speed = {400.0f, 300.0f},
@@ -57,7 +67,7 @@ int main (void){
 
     camera.target = (Vector2){.x = player.position.x, .y = 200};
     camera.offset = (Vector2){  SCREEN_WIDHT/2.0f, SCREEN_HEIGHT/2.0f };
-    camera.zoom = 0.8f;
+    camera.zoom = 0.75f;
 
     SetExitKey(0);
 
@@ -84,7 +94,6 @@ int main (void){
         if (player.position.x >= level.winCoordinateX){
             checkStoreScore (SCORES_DATABASE, player.attempts);
             player.position = Spawnpoint;
-            player.attempts = 1;
             screen = SCREEN_WIN;
         }
             
@@ -104,12 +113,12 @@ int main (void){
  
                 ClearBackground((Color){34, 35, 35, 255});
 
-                // for (int i = 0; i < 200 * DISPLAYED_SIZE; i += 2048){
-                //     DrawTexturePro(game_bg, (Rectangle){0, 0, 96,  72},
-                //     (Rectangle){i, -300, 2048, 768}, (Vector2){0, 0}, 0.0f, WHITE);
-                // }       
+                       
+                for (int i = 0; i < numBlocks; i++) {
+                    drawMap(targets[i], i);
+                }
 
-                drawMap(mapTexture);
+                // drawMap(mapTexture);
                 drawProgressBar (player.position.x, level.winCoordinateX);
                 drawJumpers(jumpers, jmpCount, &tilemap);
                 drawPlayer(&player);
@@ -119,10 +128,14 @@ int main (void){
         }
 
         if (screen == SCREEN_WIN){
-            drawWinPage(player.attempts, &screen);
+            drawWinPage(&player.attempts, &screen);
         }
         
         EndDrawing();
+    }
+
+    for (int i = 0; i < numBlocks; i++) {
+        UnloadRenderTexture(targets[i]);
     }
 
     fclose(map);

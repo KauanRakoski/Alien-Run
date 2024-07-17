@@ -72,6 +72,7 @@
     "stdio.h": "c",
     "objects.h": "c",
     "gui.h": "c",
-    "cstdlib": "c"
+    "cstdlib": "c",
+    "functional": "c"
   }
 }

@@ -12,6 +12,8 @@
 #define MAP_COLUMNS 300
 #define MAP_ROWS 10
 
+#define BLOCK_COLUMNS 100
+
 #define SCORES_DATABASE "./resources/top_scores.bin"
 #define MAX_NAME_CHAR 10
 #define MAX_SAVED_PLAYERS 5
@@ -24,12 +26,17 @@ typedef struct {
 
 int calcTilePositon (int tileColumnOrRow);
 
-// Traduz as informações do arquivo de texto em código e desenhos
-void txtToMap(FILE *map, Texture2D *tileset, Block *blocks, int *blockCount, Jumper jumpers[], int *jumpersCount, Vector2 *spawn_point, Level *level);
+// Traduz as informações do arquivo de texto em desenhos
+void txtToMap(FILE *map, Texture2D *tileset, int startCol);
+// Processa o mapa e gera os colisores e blocos especiais
+void processMap(FILE *map, Block blocks[], int *blockCount, Jumper jumpers[], int *jumpersCount, Vector2 *spawnPoint, Level *level);
 // Gera uma textura de mapa (através de txtToMap), com ela, gera um array de blocos colidíveis, define o spawnpoint e a linha de chegada
 RenderTexture2D generateMapTexture (FILE *map, Texture2D *tileset, Block blocks[], int *blockCount, Jumper jumpers[], int *jumpersCount, Vector2 *spawn_point, Level *level);
 // Desenha a textura do mapa na tela
-void drawMap (RenderTexture2D mapTexture);
+void drawMap (RenderTexture2D mapTexture, int blockCol);
+
+// Gera os blocos de renderização do mapa
+void renderMapInColumns(FILE *map, Texture2D *tileset, RenderTexture2D targets[], int numBlocks);
 
 // Inicializa a leaderboard com nomes aleatórios. Sobrescreve dados já existentes
 void initLeaderboard (const char *filename);

@@ -25,6 +25,6 @@ void DrawStartScreen (GameScreen *screen, Font *logo, bool *isWindowOpen);
 void drawLeaderboardPage();
 
 // Desenha a tela de ganhar o jogo
-void drawWinPage (int attempts, GameScreen *screen);
+void drawWinPage (int *attempts, GameScreen *screen);
 
 #endif

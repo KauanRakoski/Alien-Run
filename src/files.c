@@ -20,7 +20,105 @@ int calcTilePositon (int tileColumnOrRow){
     return tileIndex * (TILE_SIZE + TILE_SPACING);
 }
 
-void txtToMap(FILE *map, Texture2D *tileset, Block blocks[], int *blockCount, Jumper jumpers[], int *jumpersCount, Vector2 *spawn_point, Level *level){
+void processMap(FILE *map, Block *blocks, int *blockCount, Jumper *jumpers, int *jumpersCount, Vector2 *spawnPoint, Level *level){
+    char tilechar;
+    Rectangle destRect = {.width = DISPLAYED_SIZE, .height = DISPLAYED_SIZE};
+    int dest_x = 0, dest_y = 0;
+
+    rewind(map);
+
+    for (int i = 0; i < MAP_ROWS; i++){
+
+        dest_x = 0;
+
+        for (int j = 0; j < MAP_COLUMNS; j++){
+            tilechar = fgetc(map);
+
+            destRect.x = dest_x, destRect.y = dest_y;
+
+            switch (tilechar){
+                // Bloco de terra
+                case 'G':
+                    blocks[*blockCount].rect = destRect;
+                    blocks[*blockCount].active = true;
+                    blocks[*blockCount].spike = false;
+
+                    *blockCount += 1;
+                    break;
+                case 't':
+                    blocks[*blockCount].rect = destRect;
+                    blocks[*blockCount].active = true;
+                    blocks[*blockCount].spike = false;
+
+                    *blockCount += 1;
+                    break;
+                // Bloco de grama
+                case 'T':
+                    blocks[*blockCount].rect = destRect;
+                    blocks[*blockCount].active = true;
+                    blocks[*blockCount].spike = false;
+
+                    *blockCount += 1;
+                    break;
+                // Gera uma plataforma
+                case '_':
+                    blocks[*blockCount].rect = destRect;
+                    blocks[*blockCount].active = true;
+                    blocks[*blockCount].spike = false;
+
+                    *blockCount += 1;
+                    break;
+                case 'y':
+                    blocks[*blockCount].rect = destRect;
+                    blocks[*blockCount].active = true;
+                    blocks[*blockCount].spike = false;
+
+                    *blockCount += 1;
+                    break;
+                // Gera um espinho
+                case 'S':
+                    blocks[*blockCount].rect = (Rectangle){dest_x, dest_y + 40, 60, 20};
+                    blocks[*blockCount].active = true;
+                    blocks[*blockCount].spike = true;
+
+                    *blockCount += 1;
+                    break;
+                // Gera um espinho invertido
+                case 'V':
+                    blocks[*blockCount].rect = (Rectangle){dest_x, dest_y + 40, 60, 20};
+                    blocks[*blockCount].active = true;
+                    blocks[*blockCount].spike = true;
+
+                    *blockCount += 1;
+                    break;
+                // Gera um Jumper
+                case 'J':
+                    jumpers[*jumpersCount].rect = destRect;
+                    jumpers[*jumpersCount].activated = false;
+                    
+                    *jumpersCount += 1;
+                    break;
+                // Gera o spawnpoint
+                case 'P':
+                    *spawnPoint = (Vector2){dest_x, dest_y};
+                    break;
+                // Gera a linha de chegada
+                case 'W':
+                    level->winCoordinateX = dest_x;
+                    break;
+
+                default:
+                    break;
+            }
+
+            dest_x += DISPLAYED_SIZE;
+        }
+        
+        dest_y += DISPLAYED_SIZE;
+    }
+}
+
+void txtToMap(FILE *map, Texture2D *tileset, int startCol){
     char tileChar;
     Rectangle tileRect = {.width = TILE_SIZE, .height = TILE_SIZE}, destRect = {.width = DISPLAYED_SIZE, .height = DISPLAYED_SIZE};
     int dest_y = 0, dest_x = 0;
@@ -29,9 +127,16 @@ void txtToMap(FILE *map, Texture2D *tileset, Block blocks[], int *blockCount, Ju
 
     // Iteramos cada "linha" e cada coluna
     for (int i = 0; i < MAP_ROWS; i++){
+
+        // Avançamos até a coluna de início de leitura
+        for (int j = 0; j < startCol; j++){
+            fgetc(map);
+        }
+
         dest_x = 0;
 
-        for (int j = 0; j < MAP_COLUMNS; j++){
+        for (int j = startCol; j < startCol + BLOCK_COLUMNS && j < MAP_COLUMNS; j++){
+
             tileChar = fgetc(map);
             bool shouldDraw = true;
 
@@ -40,12 +145,6 @@ void txtToMap(FILE *map, Texture2D *tileset, Block blocks[], int *blockCount, Ju
             switch (tileChar){
                 // Desenha o chão de terra
                 case 'G':
-                    blocks[*blockCount].rect = destRect;
-                    blocks[*blockCount].active = true;
-                    blocks[*blockCount].spike = false;
-
-                    *blockCount += 1;
-
                     tileRect.x = calcTilePositon(14);
                     tileRect.y = calcTilePositon(9);
                     break;
@@ -57,90 +156,36 @@ void txtToMap(FILE *map, Texture2D *tileset, Block blocks[], int *blockCount, Ju
 
                 // Desenha o chão de grama
                 case 't':
-                    blocks[*blockCount].rect = destRect;
-                    blocks[*blockCount].active = true;
-                    blocks[*blockCount].spike = false;
-
-                    *blockCount += 1;
-                    
                     tileRect.x = calcTilePositon(11);
                     tileRect.y = calcTilePositon(14);
                     break;
-                case 'T':
-                    blocks[*blockCount].rect = destRect;
-                    blocks[*blockCount].active = true;
-                    blocks[*blockCount].spike = false;
 
-                    *blockCount += 1;
-                    
+                case 'T':
                     tileRect.x = calcTilePositon(12);
                     tileRect.y = calcTilePositon(14);
                     break;
-                case '_':
-                    blocks[*blockCount].rect = destRect;
-                    blocks[*blockCount].active = true;
-                    blocks[*blockCount].spike = false;
-
-                    *blockCount += 1;
-                    
+                case '_':            
                     tileRect.x = calcTilePositon(7);
                     tileRect.y = calcTilePositon(8);
                     break;
                 case 'y':
-                    blocks[*blockCount].rect = destRect;
-                    blocks[*blockCount].active = true;
-                    blocks[*blockCount].spike = false;
-
-                    *blockCount += 1;
-                    
                     tileRect.x = calcTilePositon(13);
                     tileRect.y = calcTilePositon(14);
                     break;
                 // Desenha os espinhos
                 case 'S':
-                    blocks[*blockCount].rect = (Rectangle){dest_x, dest_y + 40, 60, 20};
-                    blocks[*blockCount].active = true;
-                    blocks[*blockCount].spike = true;
-
-                    *blockCount += 1;
-
                     tileRect.x = calcTilePositon(4);
                     tileRect.y = calcTilePositon(10);
                     break;
                 
                 // Desenha os espinhos invertidos
                 case 'V':
-                    blocks[*blockCount].rect = (Rectangle){dest_x, dest_y + 40, 60, 20};
-                    blocks[*blockCount].active = true;
-                    blocks[*blockCount].spike = true;
-
-                    *blockCount += 1;
-
                     tileRect.x = calcTilePositon(7);
                     tileRect.y = calcTilePositon(9);
                     break;
 
-                // Gera um jumper
-                case 'J':
-                    shouldDraw = false;
-                    jumpers[*jumpersCount].rect = destRect;
-                    jumpers[*jumpersCount].activated = false;
-                    
-                    *jumpersCount += 1;
-                    tileRect.x = calcTilePositon(8);
-                    tileRect.y = calcTilePositon(6);
-                    break;
-
-                // Gera o spawnpoint
-                case 'P':
-                    shouldDraw = false;
-                    *spawn_point = (Vector2){dest_x, dest_y};
-                    break;
-
                 // Gera a linha de chegada
                 case 'W':
-                    level->winCoordinateX = dest_x;
-
                     tileRect.x = calcTilePositon(7);
                     tileRect.y = calcTilePositon(10);
                     break;
@@ -162,23 +207,39 @@ void txtToMap(FILE *map, Texture2D *tileset, Block blocks[], int *blockCount, Ju
         }
 
         dest_y += DISPLAYED_SIZE;
+
+        // Avançamos até o final da linha para passar pra próxima
+        for (int j = startCol + BLOCK_COLUMNS; j < MAP_COLUMNS; j++){
+            fgetc(map);
+        }
     }
 }
 
-RenderTexture2D generateMapTexture (FILE *map, Texture2D *tileset, Block blocks[], int *blockCount, Jumper jumpers[], int *jumpersCount, Vector2 *spawn_point, Level *level){
-    RenderTexture2D mapTexture = LoadRenderTexture(210 * DISPLAYED_SIZE, MAP_ROWS * DISPLAYED_SIZE);   
+// RenderTexture2D generateMapTexture (FILE *map, Texture2D *tileset, Block blocks[], int *blockCount, Jumper jumpers[], int *jumpersCount, Vector2 *spawn_point, Level *level){
+//     RenderTexture2D mapTexture = LoadRenderTexture(210 * DISPLAYED_SIZE, MAP_ROWS * DISPLAYED_SIZE);   
 
-    BeginTextureMode(mapTexture);
-        txtToMap(map, tileset, blocks, blockCount, jumpers, jumpersCount, spawn_point, level);
-    EndTextureMode();
+//     BeginTextureMode(mapTexture);
+//         txtToMap(map, tileset, blocks, blockCount, jumpers, jumpersCount, spawn_point, level);
+//     EndTextureMode();
 
-    return mapTexture;
+//     return mapTexture;
+// }
+
+void renderMapInColumns(FILE *map, Texture2D *tileset, RenderTexture2D targets[], int numBlocks) {
+    for (int block = 0; block < numBlocks; block++) {
+        BeginTextureMode(targets[block]);
+
+            txtToMap(map, tileset, block * BLOCK_COLUMNS);
+
+        EndTextureMode();
+    }
 }
 
-void drawMap(RenderTexture2D mapTexture){
+
+void drawMap(RenderTexture2D mapTexture, int blockCol){
     DrawTexturePro(mapTexture.texture, 
         (Rectangle){ 0, 0, mapTexture.texture.width, -mapTexture.texture.height },
-        (Rectangle){ 0, 0, mapTexture.texture.width, mapTexture.texture.height },
+        (Rectangle){ blockCol * BLOCK_COLUMNS * DISPLAYED_SIZE, 0, mapTexture.texture.width, mapTexture.texture.height },
                        (Vector2){ 0, 0 }, 0.0f, WHITE);
 }
 
@@ -192,7 +253,7 @@ Cada objeto identificara um jogador pelo nome e pelo número de tentativas (quan
 */
 
 // Função que inicializa um novo banco de dados de leaderboard
-// Cuidado: ela irá sobreescrever dados já existentes!
+// Caso ele não exista ainda
 void initLeaderboard (const char *filename){
     FILE *leaderboard_db = fopen(filename, "rb");
 

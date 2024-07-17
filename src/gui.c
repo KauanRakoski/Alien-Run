@@ -45,19 +45,19 @@ void drawLeaderboardPage(){
     loadLeaderboard(SCORES_DATABASE, player_scores);
     char p[50];
 
-    ClearBackground((Color){1, 82, 172, 255});
-    DrawText("Leaderboard", 240, 30, 30, BLACK);
+    ClearBackground((Color){34, 35, 35, 255});
+    DrawText("Leaderboard", 240, 50, 50, WHITE);
 
     for (int i = 0; i < MAX_SAVED_PLAYERS; i++){
         snprintf(p, 50, "%s \t\t\t\t %d", player_scores[i].name, player_scores[i].attempts);
-        DrawText(p, 240, 300 + 40 * i, 30, BLACK);
+        DrawText(p, 240, 300 + 40 * i, 30, WHITE);
     }
 }
 
-void drawWinPage (int attempts, GameScreen *screen){
+void drawWinPage (int *attempts, GameScreen *screen){
     char texto[15];
 
-    sprintf(texto, "%d tentativas", attempts);
+    sprintf(texto, "%d tentativas", *attempts);
 
     DrawRectangle(300, 150, 300, 300, (Color){0,0,0,200});
     DrawText("Fase concluída!", 400, 300, 30, WHITE);
@@ -65,5 +65,6 @@ void drawWinPage (int attempts, GameScreen *screen){
 
     if(IsKeyPressed(KEY_ENTER)){
         *screen = SCREEN_START;
+        *attempts = 1;
     }
 }

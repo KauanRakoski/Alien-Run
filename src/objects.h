@@ -8,6 +8,18 @@
 #define G_UP 600
 #define G_DOWN 1100
 
+typedef enum {
+    ANIM_WALK,
+    ANIM_JUMP
+} AnimationType;
+
+typedef struct {
+    AnimationType type;
+    int currentFrame;
+    float frameTime;
+    float frameCounter;
+} Animation;
+
 typedef struct {
     Vector2 position;
     Vector2 speed;
