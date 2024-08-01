@@ -1,32 +1,61 @@
 #include "objects.h"
 #include "files.h"
+#include "gui.h"
 
 // =========================
 //          Jogador
 // =========================
 void updatePlayer (Player *player, float deltaTime){
 
+    // Lógica de Pulo
     if (IsKeyDown(KEY_SPACE) && player->canJump){
         player->speed.y = -350;
         player->canJump = false;
     }
 
+    // Lógica Posicional
     player->position.x += player->speed.x * deltaTime;
 
     player->speed.y += player->gravity * deltaTime;
     player->position.y += player->speed.y * deltaTime;
+
+    // Lógica de animação
+    if (player->canJump){
+        player->anim.frameCounter += deltaTime;
+
+        if (player->anim.frameCounter >= player->anim.frameTime){
+            player->anim.frameCounter = 0.0f;
+            player->anim.currentFrame++;
+
+            // Caso ultrapasse as animações, voltamos à primeira
+            if (player->anim.currentFrame > player->anim.lastFrame)
+                player->anim.currentFrame = 2; // Começa no 2
+        }
+    } else{
+        player->anim.currentFrame = 5;
+    }
+    
 };
 
-void drawPlayer (Player *player){
-    DrawRectangle(player->position.x, player->position.y, 60, 60, WHITE);
+void drawPlayer (Player *player, Texture2D *tileset){
+    Rectangle playerDraw = {(int)player->position.x - 20, (int)player->position.y - 20, 80, 80};
+
+    Rectangle sourceRect = {
+        .x = calcTilePositon(player->anim.currentFrame),
+        .y = calcTilePositon(13),
+        .width = TILE_SIZE,
+        .height = TILE_SIZE
+    };
+    
+    DrawTexturePro(*tileset, sourceRect, playerDraw, (Vector2){0, 0}, 0.0f, WHITE);
 }
 
 // =========================
 //    Barra de progresso
 // =========================
 void drawProgressBar (float playerPositionX, float winCoordinatesX){
-    DrawRectangle(playerPositionX - 300, -160, 600, 30, BLACK);
-    DrawRectangle(playerPositionX - 300, -160, (playerPositionX / winCoordinatesX) * 600, 30, WHITE);
+    DrawRectangle((int)playerPositionX - 300, -160, 600, 30, BLACK);
+    DrawRectangle((int)playerPositionX - 300, -160, (playerPositionX / winCoordinatesX) * 600, 30, WHITE);
 }
 
 // =========================
@@ -119,5 +148,20 @@ void drawJumpers (Jumper *jumpers, int jmpCount, Texture2D *tileset){
 }
 
 // =========================
-//      Desenho geral
+//        Win Logic
 // =========================
+void checkWin(Player *player, Level *level, GameScreen *screen, Vector2 *Spawnpoint, Jumper *jumpers, int jmpCount){
+    if (player->position.x >= level->winCoordinateX){
+        checkStoreScore(SCORES_DATABASE, player->attempts);
+        player->position = *Spawnpoint;
+        *screen = SCREEN_WIN;
+
+        for (int i = 0; i < jmpCount; i++){
+            Jumper *jmp = jumpers + i;
+
+            jmp->activated = false;
+        }
+    }
+
+    return;
+}

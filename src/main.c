@@ -20,10 +20,11 @@ int main (void){
     Sound death_exp = LoadSound("./resources/death_sound.mp3");
     
     GameScreen screen = SCREEN_START;
-    Vector2 Spawnpoint;
+    Vector2 Spawnpoint = {0, 200};
 
     Level level = {
         .attempts = 1,
+        .winCoordinateX = 18000
     };
 
     Jumper jumpers[MAX_JUMPERS];
@@ -58,7 +59,8 @@ int main (void){
         .position = Spawnpoint,
         .speed = {400.0f, 300.0f},
         .gravity = 0,
-        .attempts = 1
+        .attempts = 1,
+        .anim = {ANIM_WALK, 2, 0.2f, 0.0f, 4}
     };
 
     SetTargetFPS(60);
@@ -84,21 +86,15 @@ int main (void){
             updatePlayer(&player, deltaTime);
 
             UpdateMusicStream(soundTrack);
+
+            checkWin(&player, &level, &screen, &Spawnpoint, jumpers, jmpCount);
         }
         if (screen == SCREEN_LEADERBOARD){
             if (IsKeyPressed(KEY_ESCAPE)){
                 screen = SCREEN_START;
             }
         }
-
-        if (player.position.x >= level.winCoordinateX){
-            checkStoreScore (SCORES_DATABASE, player.attempts);
-            player.position = Spawnpoint;
-            screen = SCREEN_WIN;
-        }
             
-
-        
         BeginDrawing();
 
         if (screen == SCREEN_START){
@@ -110,21 +106,17 @@ int main (void){
 
         else if (screen == SCREEN_LEVEL1){
             BeginMode2D(camera);
- 
                 ClearBackground((Color){34, 35, 35, 255});
 
-                       
                 for (int i = 0; i < numBlocks; i++) {
                     drawMap(targets[i], i);
                 }
 
-                // drawMap(mapTexture);
+                drawPlayer(&player, &tilemap);
                 drawProgressBar (player.position.x, level.winCoordinateX);
                 drawJumpers(jumpers, jmpCount, &tilemap);
-                drawPlayer(&player);
-
+                
             EndMode2D();
-
         }
 
         if (screen == SCREEN_WIN){

@@ -1,12 +1,13 @@
 #include "raylib.h"
+#include "gui.h"
 
 #ifndef OBJECTS_H
 #define OBJECTS_H
 
 #define MAX_BLOCKS 2000
 #define MAX_JUMPERS 10
-#define G_UP 600
-#define G_DOWN 1100
+#define G_UP 700
+#define G_DOWN 1500
 
 typedef enum {
     ANIM_WALK,
@@ -18,6 +19,7 @@ typedef struct {
     int currentFrame;
     float frameTime;
     float frameCounter;
+    int lastFrame;
 } Animation;
 
 typedef struct {
@@ -27,6 +29,8 @@ typedef struct {
     float Jumpspeed;
     float gravity;
     int attempts;
+
+    Animation anim;
 } Player;
 
 typedef struct {
@@ -46,7 +50,7 @@ typedef struct {
 } Level;
 
 void updatePlayer (Player *player, float deltaTime);
-void drawPlayer (Player *player);
+void drawPlayer (Player *player, Texture2D *tileset);
 
 void InitBlocks(Block *blocks);
 void checkColisions (Player *player, Block *blocks, int blockCount, Sound *death_exp, Jumper *jumpers, int jmpCount, Level *level);
@@ -55,5 +59,7 @@ void checkJumpers (Player *player, Jumper *jumpers, int jmpCount);
 void drawJumpers (Jumper *jumpers, int jmpCount, Texture2D *tileset);
 
 void drawProgressBar (float playerPositionX, float winCoordinatesX);
+
+void checkWin(Player *player, Level *level, GameScreen *screen, Vector2 *Spawnpoint, Jumper *jumpers, int jmpCount);
 
 #endif

@@ -73,6 +73,8 @@
     "objects.h": "c",
     "gui.h": "c",
     "cstdlib": "c",
-    "functional": "c"
+    "functional": "c",
+    "*.tcc": "c",
+    "cmath": "c"
   }
 }

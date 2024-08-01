@@ -75,6 +75,7 @@ void processMap(FILE *map, Block *blocks, int *blockCount, Jumper *jumpers, int 
 
                     *blockCount += 1;
                     break;
+
                 // Gera um espinho
                 case 'S':
                     blocks[*blockCount].rect = (Rectangle){dest_x, dest_y + 40, 60, 20};
@@ -171,6 +172,16 @@ void txtToMap(FILE *map, Texture2D *tileset, int startCol){
                 case 'y':
                     tileRect.x = calcTilePositon(13);
                     tileRect.y = calcTilePositon(14);
+                    break;
+
+                case 'e':
+                    tileRect.x = calcTilePositon(11);
+                    tileRect.y = calcTilePositon(15);
+                    break;
+                
+                 case 'd':
+                    tileRect.x = calcTilePositon(13);
+                    tileRect.y = calcTilePositon(15);
                     break;
                 // Desenha os espinhos
                 case 'S':
