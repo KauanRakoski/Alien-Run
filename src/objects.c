@@ -10,7 +10,7 @@ void updatePlayer (Player *player, float deltaTime){
     // Lógica de Pulo
     if (IsKeyDown(KEY_SPACE) && player->canJump){
         player->speed.y = -350;
-        player->canJump = false;
+        player->canJump = false; // evita double jump
     }
 
     // Lógica Posicional
@@ -21,8 +21,11 @@ void updatePlayer (Player *player, float deltaTime){
 
     // Lógica de animação
     if (player->canJump){
+        // Enquanto o jogador estiver no chão, incrementamos a contagem de tempo de frame
         player->anim.frameCounter += deltaTime;
 
+        // Se o tempo ultrapassado for maior que o intervalo de frame,
+        // movemos para o próximo frame do sprite e reiniciamos o contador
         if (player->anim.frameCounter >= player->anim.frameTime){
             player->anim.frameCounter = 0.0f;
             player->anim.currentFrame++;
@@ -32,14 +35,17 @@ void updatePlayer (Player *player, float deltaTime){
                 player->anim.currentFrame = 2; // Começa no 2
         }
     } else{
+        // Se o jogador estiver no ar, simplesmente deixamos no sprite de queda
         player->anim.currentFrame = 5;
     }
     
 };
 
 void drawPlayer (Player *player, Texture2D *tileset){
+    // Criamos um retângulo baseado na posição do jogador para ser a origem de destino
     Rectangle playerDraw = {(int)player->position.x - 20, (int)player->position.y - 20, 80, 80};
 
+    // e baseado no frame de animação, buscamos a origem da animação no tilesheet
     Rectangle sourceRect = {
         .x = calcTilePositon(player->anim.currentFrame),
         .y = calcTilePositon(13),
@@ -68,7 +74,9 @@ void InitBlocks(Block *blocks) {
     }
 }
 
+// Função que testa a condição do jogador estar sobre a plataforma
 int isAbovePlatform(Block *bl, Rectangle playerRect){
+    // ela precisa estar ativa e não ser um espinho
     return (bl->active && !bl->spike &&
             bl->rect.x <= playerRect.x + playerRect.width && // a margem esquerda da pf menor que a direita do jogador
             bl->rect.x + bl->rect.width >= playerRect.x && // a margem esquerda do jogador maior que a direita da pf
@@ -80,16 +88,21 @@ void checkColisions (Player *player, Block *blocks, int blockCount, Sound *death
     Rectangle playerRect = {.x = player->position.x, .y = player->position.y, .width = DISPLAYED_SIZE, .height = DISPLAYED_SIZE};
     bool onPlatform = false;
 
+    // Para cada colisor da matriz de colisores,
     for (int i = 0; i < blockCount; i ++){
         Block *bl = blocks + i;
 
+        // Se o jogador estiver sobre o colisor
         if (isAbovePlatform(bl, playerRect)){
                 onPlatform = true;
+                // Resetamos a gravidade e fazemos o jogador parar de cair
                 player->gravity = 0;
                 player->speed.y = 0;
+                // Posicionamos o jogador imediatamente acima da plataforma
                 player->position.y = bl->rect.y - playerRect.height;
                 break;
             }
+        // Se o jogador não estiver em cima do colisor, mas ainda colidir com ele resetamos o nível
         else if (CheckCollisionRecs(playerRect, bl->rect)){
             PlaySound(*death_exp);
             
@@ -98,21 +111,24 @@ void checkColisions (Player *player, Block *blocks, int blockCount, Sound *death
             player->attempts++;
             level->attempts++;
 
+            // resetamos o estado dos jumpers para sua animação
             for (int i = 0; i < jmpCount; i++){
                 jumpers[i].activated = false;
             }
         }
     }
 
+    // Se o jogador estiver no ar, ele não pode pular
     if (!onPlatform){
         player->canJump = false;
-        
+
+        // Dividimos a gravidade para a queda ser pesada e o pulo ser leve
         if (player->speed.y > 0)
             player->gravity = G_DOWN;
         else
             player->gravity = G_UP;
     } else
-        player->canJump = true;
+        player->canJump = true; // se o jogador estiver na plataforma, ele pode pular
 }
 
 // =========================
