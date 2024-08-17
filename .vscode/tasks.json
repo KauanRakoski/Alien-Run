@@ -11,14 +11,14 @@
                 "PLATFORM=PLATFORM_DESKTOP",
                 "BUILD_MODE=DEBUG",
                 "PROJECT_NAME=inf-dash",
-                "OBJS=src/main.c src/files.c src/gui.c src/objects.c src/resources.c"
+                "OBJS=src/main.c src/files.c src/gui.c src/objects.c"
             ],
             "windows": {
                 "command": "C:/raylib/w64devkit/bin/mingw32-make.exe",
                 "args": [
                     "RAYLIB_PATH=C:/raylib/raylib",
                     "PROJECT_NAME=inf-dash",
-                    "OBJS=src/main.c src/files.c src/gui.c src/objects.c src/resources.c",
+                    "OBJS=src/main.c src/files.c src/gui.c src/objects.c",
                     "BUILD_MODE=DEBUG"
                 ],
             },

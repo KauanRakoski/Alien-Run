@@ -1,7 +1,8 @@
 #include "raylib.h"
+#include "raymath.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "files.h"
 #include "objects.h"
@@ -45,6 +46,8 @@ void processMap(FILE *map, Block *blocks, int *blockCount, Jumper *jumpers, int 
 
                     *blockCount += 1;
                     break;
+
+                // Bloco de grama
                 case 't':
                     blocks[*blockCount].rect = destRect;
                     blocks[*blockCount].active = true;
@@ -52,16 +55,8 @@ void processMap(FILE *map, Block *blocks, int *blockCount, Jumper *jumpers, int 
 
                     *blockCount += 1;
                     break;
-                // Bloco de grama
-                case 'T':
-                    blocks[*blockCount].rect = destRect;
-                    blocks[*blockCount].active = true;
-                    blocks[*blockCount].spike = false;
 
-                    *blockCount += 1;
-                    break;
-                // Gera uma plataforma
-                case '_':
+                case 'T':
                     blocks[*blockCount].rect = destRect;
                     blocks[*blockCount].active = true;
                     blocks[*blockCount].spike = false;
@@ -76,8 +71,17 @@ void processMap(FILE *map, Block *blocks, int *blockCount, Jumper *jumpers, int 
                     *blockCount += 1;
                     break;
 
+                // Gera uma plataforma
+                case '_':
+                    blocks[*blockCount].rect = destRect;
+                    blocks[*blockCount].active = true;
+                    blocks[*blockCount].spike = false;
+
+                    *blockCount += 1;
+                    break;
+
                 // Gera um espinho
-                case 'S':
+                case 'O':
                     blocks[*blockCount].rect = (Rectangle){dest_x, dest_y + 40, 60, 20};
                     blocks[*blockCount].active = true;
                     blocks[*blockCount].spike = true;
@@ -92,6 +96,7 @@ void processMap(FILE *map, Block *blocks, int *blockCount, Jumper *jumpers, int 
 
                     *blockCount += 1;
                     break;
+
                 // Gera um Jumper
                 case 'J':
                     jumpers[*jumpersCount].rect = destRect;
@@ -184,7 +189,7 @@ void txtToMap(FILE *map, Texture2D *tileset, int startCol){
                     tileRect.y = calcTilePositon(15);
                     break;
                 // Desenha os espinhos
-                case 'S':
+                case 'O':
                     tileRect.x = calcTilePositon(4);
                     tileRect.y = calcTilePositon(10);
                     break;
@@ -226,30 +231,21 @@ void txtToMap(FILE *map, Texture2D *tileset, int startCol){
     }
 }
 
-// RenderTexture2D generateMapTexture (FILE *map, Texture2D *tileset, Block blocks[], int *blockCount, Jumper jumpers[], int *jumpersCount, Vector2 *spawn_point, Level *level){
-//     RenderTexture2D mapTexture = LoadRenderTexture(210 * DISPLAYED_SIZE, MAP_ROWS * DISPLAYED_SIZE);   
-
-//     BeginTextureMode(mapTexture);
-//         txtToMap(map, tileset, blocks, blockCount, jumpers, jumpersCount, spawn_point, level);
-//     EndTextureMode();
-
-//     return mapTexture;
-// }
-
+// O mapa é muito grande para ser renderizado em uma única vez, por isso quebramos em pedaços e
+// criamos uma matriz de texturas para desenhá-lo.
 void renderMapInColumns(FILE *map, Texture2D *tileset, RenderTexture2D targets[], int numBlocks) {
     for (int block = 0; block < numBlocks; block++) {
         BeginTextureMode(targets[block]);
-
+            ClearBackground((Color){34, 35, 35, 255});
             txtToMap(map, tileset, block * BLOCK_COLUMNS);
-
         EndTextureMode();
     }
 }
 
-
+// Desenha as texturas do mapa de modo correto
 void drawMap(RenderTexture2D mapTexture, int blockCol){
     DrawTexturePro(mapTexture.texture, 
-        (Rectangle){ 0, 0, mapTexture.texture.width, -mapTexture.texture.height },
+        (Rectangle){ 0, 0, mapTexture.texture.width, -mapTexture.texture.height }, // precisamos inverter por diferentes sistemas interpretarem y de modo diferente
         (Rectangle){ blockCol * BLOCK_COLUMNS * DISPLAYED_SIZE, 0, mapTexture.texture.width, mapTexture.texture.height },
                        (Vector2){ 0, 0 }, 0.0f, WHITE);
 }
@@ -287,9 +283,10 @@ void initLeaderboard (const char *filename){
         exit(EXIT_FAILURE);
     }
 
+    // Criamos jogadores genéricos
     for (int i = 0; i < MAX_SAVED_PLAYERS; i++){
         snprintf(db_players[i].name, MAX_NAME_CHAR, "Player %d", i + 1);
-        db_players[i].attempts = 40 + GetRandomValue(0, 50);
+        db_players[i].attempts = 40 + i;
     }
 
     fwrite(db_players, sizeof(db_players), MAX_SAVED_PLAYERS, leaderboard_db);
@@ -315,19 +312,23 @@ void checkStoreScore (const char *filename, int attempts){
     fread(players_db, sizeof(PlayerData), MAX_SAVED_PLAYERS, leaderboard_db);
 
     for (int i = 0; i < MAX_SAVED_PLAYERS; i++){
-
+        // Se o jogador tiver concluído em menos tentativas que db[i], 
         if (attempts < players_db[i].attempts){
+            // Passamos cada jogador para a próxima posição
             for (int j = MAX_SAVED_PLAYERS - 1; j > i; j--){
                 players_db[j] = players_db[j - 1];
             }
 
-            strncpy(players_db[i].name, "Player", MAX_NAME_CHAR);
+            // E colocamos ele no lugar de db[i] (db[i] foi para db[i+1])
+            // Garantindo seu posicionamento correto
+            strncpy(players_db[i].name, "Player 0", MAX_NAME_CHAR);
             players_db[i].attempts = attempts;
 
             break;
         }
     }
 
+    // Voltamos ao início do arquivo e escrevemos a leaderboard atualizada
     rewind(leaderboard_db);
     fwrite(players_db, sizeof(PlayerData), MAX_SAVED_PLAYERS, leaderboard_db);
     fclose(leaderboard_db);

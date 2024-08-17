@@ -26,14 +26,20 @@ void checkButtons (Vector2 *mousePosition,  GameScreen *screen, bool *isWindowOp
     }
 }
 
+void DrawPauseMenu (GameScreen *screen){
+    DrawText("> Jogo Pausado. Pressione enter para continuar.", 20, 500, 20, WHITE);
+
+    if (IsKeyPressed(KEY_ENTER)) *screen = SCREEN_LEVEL1;
+}
+
 void DrawStartScreen (GameScreen *screen, Font *logo, bool *isWindowOpen){
     ClearBackground((Color){34, 35, 35, 255});
 
-    DrawTextEx(*logo, "ALIEN RUN", (Vector2){200, 150}, 100, 1.0f, WHITE);
+    DrawTextEx(*logo, "ALIEN RUN", (Vector2){200, 150}, 100, 1.0f, (Color){182, 244, 133, 255});
 
-    DrawText("Iniciar", 300, 330, 30, WHITE);
-    DrawText("Leaderboard", 280, 380, 30, WHITE);
-    DrawText("Sair", 300, 430, 30, WHITE);
+    DrawText("Iniciar", 330, 330, 30, WHITE);
+    DrawText("Leaderboard", 310, 380, 30, WHITE);
+    DrawText("Sair", 340, 430, 30, WHITE);
 
     Vector2 mousePos = GetMousePosition();
 
@@ -59,12 +65,22 @@ void drawWinPage (int *attempts, GameScreen *screen){
 
     sprintf(texto, "%d tentativas", *attempts);
 
-    DrawRectangle(300, 150, 300, 300, (Color){0,0,0,200});
-    DrawText("Fase concluída!", 340, 270, 30, WHITE);
-    DrawText(texto, 400, 320, 20, WHITE);
+    //DrawRectangle(300, 150, 300, 300, (Color){0,0,0,200});
+    DrawText("Fase concluída!", 300, 270, 30, WHITE);
+    DrawText(texto, 360, 320, 20, WHITE);
+
+    DrawText("> Pressione enter para voltar ao menu principal", 20, 500, 20, WHITE);
 
     if(IsKeyPressed(KEY_ENTER)){
         *screen = SCREEN_START;
         *attempts = 1;
     }
+}
+
+// ========================
+//     Controle de som
+// ========================
+void restartMusic (Music *music){
+    StopMusicStream(*music);
+    PlayMusicStream(*music);
 }

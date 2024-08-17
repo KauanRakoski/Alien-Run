@@ -2,6 +2,8 @@
 #include "files.h"
 #include "gui.h"
 
+static void resetJumpers (Jumper *jumpers, int jmpCount);
+
 // =========================
 //          Jogador
 // =========================
@@ -53,13 +55,15 @@ void drawPlayer (Player *player, Texture2D *tileset){
         .height = TILE_SIZE
     };
     
-    DrawTexturePro(*tileset, sourceRect, playerDraw, (Vector2){0, 0}, 0.0f, WHITE);
+    DrawTexturePro(*tileset, sourceRect, playerDraw, (Vector2){0, 0}, 0.0f, (Color){182, 244, 133, 255});
 }
 
 // =========================
 //    Barra de progresso
 // =========================
 void drawProgressBar (float playerPositionX, float winCoordinatesX){
+    // Desenhamos um retângulo preto e um branco em cima com largura
+    // baseada na porcentagem do mapa que o jogador percorreu
     DrawRectangle((int)playerPositionX - 300, -160, 600, 30, BLACK);
     DrawRectangle((int)playerPositionX - 300, -160, (playerPositionX / winCoordinatesX) * 600, 30, WHITE);
 }
@@ -67,6 +71,8 @@ void drawProgressBar (float playerPositionX, float winCoordinatesX){
 // =========================
 //        Colisores
 // =========================
+
+// Inicializamos a matriz de blocos, isso evita definir width e height depois
 void InitBlocks(Block *blocks) {
     for (int i = 0; i < MAX_BLOCKS; i++) {
         blocks[i].rect = (Rectangle){0, 0, DISPLAYED_SIZE, DISPLAYED_SIZE};
@@ -80,60 +86,78 @@ int isAbovePlatform(Block *bl, Rectangle playerRect){
     return (bl->active && !bl->spike &&
             bl->rect.x <= playerRect.x + playerRect.width && // a margem esquerda da pf menor que a direita do jogador
             bl->rect.x + bl->rect.width >= playerRect.x && // a margem esquerda do jogador maior que a direita da pf
-            bl->rect.y <= playerRect.y + playerRect.height && // player adentra plataforma
-            playerRect.y + playerRect.height <=  bl->rect.y + 20);
+            bl->rect.y <= playerRect.y + playerRect.height && // jogador adentra plataforma
+            playerRect.y + playerRect.height <=  bl->rect.y + 20); // medimos se não é colisão lateral
 }
 
-void checkColisions (Player *player, Block *blocks, int blockCount, Sound *death_exp, Jumper *jumpers, int jmpCount, Level *level){
-    Rectangle playerRect = {.x = player->position.x, .y = player->position.y, .width = DISPLAYED_SIZE, .height = DISPLAYED_SIZE};
-    bool onPlatform = false;
+static void keepPlayerAbovePlatform (Player *player, Rectangle *playerRect, Block *platform){
+    // Resetamos a gravidade e fazemos o jogador parar de cair
+    player->gravity = 0;
+    player->speed.y = 0;
+    // Posicionamos o jogador imediatamente acima da plataforma
+    player->position.y = platform->rect.y - playerRect->height;
+}
 
-    // Para cada colisor da matriz de colisores,
-    for (int i = 0; i < blockCount; i ++){
-        Block *bl = blocks + i;
+static void resetLevel (Player *player, Level *level, Jumper *jumpers, int jmpCount, Vector2 Spawnpoint){
+    player->position = Spawnpoint;
+    player->speed.y = 0;
+    player->attempts++;
+    level->attempts++;
 
-        // Se o jogador estiver sobre o colisor
-        if (isAbovePlatform(bl, playerRect)){
-                onPlatform = true;
-                // Resetamos a gravidade e fazemos o jogador parar de cair
-                player->gravity = 0;
-                player->speed.y = 0;
-                // Posicionamos o jogador imediatamente acima da plataforma
-                player->position.y = bl->rect.y - playerRect.height;
-                break;
-            }
-        // Se o jogador não estiver em cima do colisor, mas ainda colidir com ele resetamos o nível
-        else if (CheckCollisionRecs(playerRect, bl->rect)){
-            PlaySound(*death_exp);
-            
-            player->position = (Vector2){80, 200};
-            player->speed.y = 0;
-            player->attempts++;
-            level->attempts++;
+    // resetamos o estado dos jumpers para sua animação funcionar corretamente
+    resetJumpers(jumpers, jmpCount);
+}
 
-            // resetamos o estado dos jumpers para sua animação
-            for (int i = 0; i < jmpCount; i++){
-                jumpers[i].activated = false;
-            }
-        }
-    }
-
+static void handleJumping (bool onPlatform, Player *player){
     // Se o jogador estiver no ar, ele não pode pular
     if (!onPlatform){
         player->canJump = false;
 
-        // Dividimos a gravidade para a queda ser pesada e o pulo ser leve
-        if (player->speed.y > 0)
-            player->gravity = G_DOWN;
-        else
-            player->gravity = G_UP;
+        // Dividimos a gravidade para pulo ser leve e queda ser pesada
+        if (player->speed.y > 0) player->gravity = G_DOWN;
+        else player->gravity = G_UP;
     } else
         player->canJump = true; // se o jogador estiver na plataforma, ele pode pular
+}
+
+void checkColisions (Player *player, Block *blocks, int blockCount, Sound *death_exp, Jumper *jumpers, int jmpCount, Level *level, Music *Soundtrack, Vector2 Spawnpoint){
+    Rectangle playerRect = {.x = player->position.x, .y = player->position.y, .width = DISPLAYED_SIZE, .height = DISPLAYED_SIZE};
+    bool onPlatform = false;
+
+    for (int i = 0; i < blockCount; i ++){
+        Block *bl = blocks + i;
+
+        // Se o jogador estiver sobre uma plataforma, mantemos ele
+        if (isAbovePlatform(bl, playerRect)){
+            onPlatform = true;
+            keepPlayerAbovePlatform(player, &playerRect, bl);
+            break;
+        }
+        // Se o jogador não estiver em cima do colisor, mas ainda colidir com ele resetamos o nível
+        else if (CheckCollisionRecs(playerRect, bl->rect)){
+            PlaySound(*death_exp);
+            resetLevel(player, level, jumpers, jmpCount, Spawnpoint);
+            restartMusic(Soundtrack);
+            break;
+        }
+    }
+
+    handleJumping(onPlatform, player); // a dinâmica de pulo se baseia na interação jogador-plataforma
 }
 
 // =========================
 //         Jumpers
 // =========================
+// reseta a animação de cada jumper
+static void resetJumpers (Jumper *jumpers, int jmpCount){
+    for (int i = 0; i < jmpCount; i++){
+        Jumper *jmp = jumpers + i;
+        jmp->activated = false;
+    }
+}
+
+// Verificamos se o jogador colidiu com o jumper através de uma colisão de retângulos,
+// se ele colidir fazemos ele pular mais alto que o normal
 void checkJumpers (Player *player, Jumper *jumpers, int jmpCount){
     Rectangle playerRect = {.x = player->position.x, .y = player->position.y,
                             .width = DISPLAYED_SIZE, .height = DISPLAYED_SIZE};
@@ -143,11 +167,12 @@ void checkJumpers (Player *player, Jumper *jumpers, int jmpCount){
 
         if (CheckCollisionRecs(playerRect, jmp->rect)){
             player->speed.y = -500;
-            jmp->activated = true;
+            jmp->activated = true; // ativamos o jumper para mudar seu sprite e animá-lo
         }
     }
 }
 
+// Desenhamos os jumpers, utilizando seu estado para animá-los
 void drawJumpers (Jumper *jumpers, int jmpCount, Texture2D *tileset){
     Rectangle source = {.y = calcTilePositon(9), .width = TILE_SIZE, .height = TILE_SIZE};
 
@@ -166,17 +191,18 @@ void drawJumpers (Jumper *jumpers, int jmpCount, Texture2D *tileset){
 // =========================
 //        Win Logic
 // =========================
-void checkWin(Player *player, Level *level, GameScreen *screen, Vector2 *Spawnpoint, Jumper *jumpers, int jmpCount){
+// Se o jogador chegar ao fim do mapa, consideramos que ele ganhou
+// Resetamos todas variáveis de jogo e mudamos a tela para tela final
+void checkWin(Player *player, Level *level, GameScreen *screen, Vector2 *Spawnpoint, Jumper *jumpers, int jmpCount, Music *Soundtrack){
     if (player->position.x >= level->winCoordinateX){
         checkStoreScore(SCORES_DATABASE, player->attempts);
         player->position = *Spawnpoint;
         *screen = SCREEN_WIN;
 
-        for (int i = 0; i < jmpCount; i++){
-            Jumper *jmp = jumpers + i;
+        resetJumpers(jumpers, jmpCount);
 
-            jmp->activated = false;
-        }
+        // Reiniciamos a música
+        restartMusic(Soundtrack);
     }
 
     return;
