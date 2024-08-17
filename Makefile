@@ -24,7 +24,7 @@
 .PHONY: all clean
 
 # Define required raylib variables
-PROJECT_NAME       ?= dungy
+PROJECT_NAME       ?= alien-run
 RAYLIB_VERSION     ?= 4.2.0
 RAYLIB_PATH        ?= C:/raylib/raylib
 
